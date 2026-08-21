@@ -15,7 +15,8 @@ Run this checklist on at least one current iPhone and one current Android phone.
 
 ## Behavior and persistence
 
-- A fresh install starts at zero without demo records.
+- A fresh production install starts at zero without demo records; development builds reset
+  to seven graph days with today and one earlier day at zero whenever the database starts.
 - +1, +5, +10, and +25 update the count and graph sequentially.
 - Rapid repeated taps cannot start overlapping additions.
 - Custom Amount accepts 1–250 and rejects 0, 251, decimals, signs, and letters.
@@ -29,4 +30,3 @@ Run this checklist on at least one current iPhone and one current Android phone.
 - +5/+10 finish with a medium impact; +25 finishes with a rigid impact.
 - Buttons compress on touch, new squares pulse, and the active column glows.
 - Animations remain smooth with a +250 custom addition.
-

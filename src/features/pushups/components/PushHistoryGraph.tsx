@@ -113,7 +113,6 @@ function DayColumn({
           left,
           width: slotWidth,
           height: chartHeight + BOTTOM_LABEL_HEIGHT,
-          opacity: day.reps === 0 ? 0.38 : 1,
         },
       ]}
     >
@@ -406,7 +405,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   weekday: {
-    color: 'rgba(255,255,255,0.52)',
+    color: Colors.white,
     fontSize: 13,
     fontWeight: '900',
   },

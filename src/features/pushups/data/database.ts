@@ -1,6 +1,9 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 
-const DATABASE_VERSION = 1;
+import { addDays, toDayKey } from '@/features/pushups/domain/date';
+
+const DATABASE_VERSION = 2;
+const DEVELOPMENT_REPS = [27, 48, 0, 72, 54, 66, 0] as const;
 
 export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
   await db.execAsync('PRAGMA journal_mode = WAL;');
@@ -21,8 +24,33 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
       );
       CREATE INDEX IF NOT EXISTS idx_push_day_records_day_key
         ON push_day_records(day_key);
-      PRAGMA user_version = 1;
     `);
+  }
+
+  if (currentVersion < 2) {
+    await db.execAsync('PRAGMA user_version = 2;');
+  }
+
+  if (__DEV__) {
+    await seedDevelopmentHistory(db);
   }
 }
 
+async function seedDevelopmentHistory(db: SQLiteDatabase): Promise<void> {
+  const todayKey = toDayKey(new Date());
+
+  await db.withExclusiveTransactionAsync(async (transaction) => {
+    await transaction.runAsync('DELETE FROM push_day_records');
+
+    for (const [index, reps] of DEVELOPMENT_REPS.entries()) {
+      const dayKey = addDays(todayKey, index - (DEVELOPMENT_REPS.length - 1));
+      await transaction.runAsync(
+        `INSERT INTO push_day_records (day_key, reps, color_index)
+         VALUES (?, ?, ?)`,
+        dayKey,
+        reps,
+        index,
+      );
+    }
+  });
+}

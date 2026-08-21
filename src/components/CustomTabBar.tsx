@@ -19,7 +19,7 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 14) }]}>
+    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom - 8, 8) }]}>
       {state.routes.map((route, index) => {
         const isSelected = state.index === index;
         const options = descriptors[route.key]?.options;
@@ -66,22 +66,20 @@ export function CustomTabBar({ state, descriptors, navigation }: TabBarProps) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(0,0,0,0.72)',
-    borderTopColor: 'rgba(255,255,255,0.07)',
-    borderTopWidth: StyleSheet.hairlineWidth,
+    backgroundColor: '#121214',
     paddingHorizontal: 24,
-    paddingTop: 8,
+    paddingTop: 6,
   },
   item: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    minHeight: 42,
+    gap: 3,
+    minHeight: 38,
   },
   indicator: {
     position: 'absolute',
-    top: -10,
+    top: -7,
     width: 24,
     height: 3,
     borderRadius: 2,
@@ -99,4 +97,3 @@ const styles = StyleSheet.create({
     color: Colors.pink,
   },
 });
-
