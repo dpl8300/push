@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandBackground } from '@/components/BrandBackground';
@@ -9,8 +10,8 @@ import { Typography } from '@/design-system/typography';
 type ComingSoonScreenProps = {
   title: string;
   description: string;
-  icon: 'chart.bar.fill' | 'gearshape.fill';
-  androidIcon: 'bar_chart' | 'settings';
+  icon: 'chart.bar.fill';
+  androidIcon: 'bar_chart';
 };
 
 export function ComingSoonScreen({
@@ -19,10 +20,37 @@ export function ComingSoonScreen({
   icon,
   androidIcon,
 }: ComingSoonScreenProps) {
+  const router = useRouter();
+
+  const goBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace('/');
+  };
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <BrandBackground />
-      <Text style={styles.brand}>PUSH</Text>
+      <View style={styles.header}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back to home"
+          onPress={goBack}
+          style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+        >
+          <PlatformIcon
+            ios="chevron.left"
+            android="arrow_back"
+            size={20}
+            weight="semibold"
+            tintColor="rgba(255,255,255,0.78)"
+          />
+        </Pressable>
+        <Text style={styles.brand}>PUSH</Text>
+      </View>
       <View style={styles.content}>
         <View style={styles.iconCircle}>
           <PlatformIcon
@@ -45,12 +73,27 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     paddingHorizontal: 22,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: -12,
+    borderRadius: 22,
+  },
+  backButtonPressed: {
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
   brand: {
     ...Typography.brand,
     color: Colors.white,
     fontSize: 39,
     letterSpacing: 1,
-    marginTop: 4,
   },
   content: {
     flex: 1,
@@ -83,4 +126,3 @@ const styles = StyleSheet.create({
     marginTop: 9,
   },
 });
-

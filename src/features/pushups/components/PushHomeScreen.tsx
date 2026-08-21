@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,6 +13,7 @@ import { Typography } from '@/design-system/typography';
 import { usePushHome } from '@/features/pushups/hooks/usePushHome';
 
 export function PushHomeScreen() {
+  const router = useRouter();
   const { height } = useWindowDimensions();
   const compact = height < 760;
   const {
@@ -31,7 +33,7 @@ export function PushHomeScreen() {
   } = usePushHome();
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <BrandBackground />
       <View style={[styles.content, compact && styles.compactContent]}>
         <View style={styles.header}>
@@ -84,6 +86,22 @@ export function PushHomeScreen() {
         </View>
 
         <StatsStrip stats={stats} />
+
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="See more progress"
+          onPress={() => router.push('/progress')}
+          style={({ pressed }) => [styles.progressLink, pressed && styles.progressLinkPressed]}
+        >
+          <Text style={styles.progressLinkLabel}>See more progress</Text>
+          <PlatformIcon
+            ios="chevron.right"
+            android="chevron_right"
+            size={12}
+            weight="semibold"
+            tintColor="rgba(255,255,255,0.46)"
+          />
+        </Pressable>
 
         {error ? (
           <View style={styles.errorBanner}>
@@ -219,6 +237,24 @@ const styles = StyleSheet.create({
   spacer: {
     flex: 1,
     minHeight: 2,
+  },
+  progressLink: {
+    minHeight: 44,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 5,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+  },
+  progressLinkPressed: {
+    backgroundColor: 'rgba(255,255,255,0.055)',
+  },
+  progressLinkLabel: {
+    color: 'rgba(255,255,255,0.58)',
+    fontSize: 13,
+    fontWeight: '600',
   },
   loadingControls: {
     minHeight: 121,

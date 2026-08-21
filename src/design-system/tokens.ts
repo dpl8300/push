@@ -25,7 +25,6 @@ export const WeekColors = [
 export const Layout = {
   screenHorizontalPadding: 22,
   cornerRadius: 8,
-  tabBarHeight: 82,
 } as const;
 
 export const Opacity = {
@@ -33,4 +32,3 @@ export const Opacity = {
   tertiaryText: 0.48,
   grid: 0.035,
 } as const;
-

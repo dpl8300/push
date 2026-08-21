@@ -1,13 +1,5 @@
-import { ComingSoonScreen } from '@/components/ComingSoonScreen';
+import { Redirect } from 'expo-router';
 
 export default function SettingsRoute() {
-  return (
-    <ComingSoonScreen
-      title="Settings"
-      description="Goals, haptic preferences, and app customization are coming next."
-      icon="gearshape.fill"
-      androidIcon="settings"
-    />
-  );
+  return <Redirect href="/progress" />;
 }
-
