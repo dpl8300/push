@@ -52,6 +52,7 @@ final class PushHomeViewModel {
     private let calendar = Calendar.current
     private let haptics = PushHaptics()
     private let modelContext: ModelContext
+    private let usesDummyHistory = true
     private var todayRecord: PushDayRecord?
 
     init(modelContext: ModelContext) {
@@ -60,10 +61,19 @@ final class PushHomeViewModel {
     }
 
     var visibleWeek: [PushDay] {
-        Array(history.suffix(8))
+        Array(history.suffix(7))
     }
 
     func loadHistory() {
+        if usesDummyHistory {
+            todayRecord = nil
+            history = makeDummyHistory()
+            lifetimePushUps = history.map(\.reps).reduce(0, +)
+            currentStreak = Self.currentStreak(in: history)
+            longestStreak = Self.longestStreak(in: history)
+            return
+        }
+
         let records = fetchOrCreateRecentRecords()
         let sortedRecords = records.sorted { $0.dayStart < $1.dayStart }
 
@@ -110,6 +120,10 @@ final class PushHomeViewModel {
         return "New daily best. Keep pushing."
     }
 
+    func prewarmHaptics() {
+        haptics.prewarm()
+    }
+
     func addPushUps(_ amount: Int) {
         guard amount > 0 else { return }
         Task {
@@ -137,7 +151,9 @@ final class PushHomeViewModel {
             }
         }
 
-        saveChanges()
+        if usesDummyHistory == false {
+            saveChanges()
+        }
         haptics.finish(amount: amount)
         await clearAddFeedback()
     }
@@ -209,6 +225,25 @@ final class PushHomeViewModel {
             modelContext.delete(record)
         }
         records.removeFirst(firstActiveIndex)
+    }
+
+    private func makeDummyHistory() -> [PushDay] {
+        let today = calendar.startOfDay(for: .now)
+        let dummyReps = [27, 48, 39, 72, 54, 66, 0]
+
+        return dummyReps.enumerated().compactMap { index, reps in
+            let dayOffset = index - (dummyReps.count - 1)
+            guard let date = calendar.date(byAdding: .day, value: dayOffset, to: today) else { return nil }
+            let color = PushPalette.weekColors[index % PushPalette.weekColors.count]
+
+            return PushDay(
+                date: date,
+                weekday: PushDay.weekday(for: date, calendar: calendar),
+                reps: reps,
+                color: color,
+                isToday: dayOffset == 0
+            )
+        }
     }
 
     private func makePushDay(from record: PushDayRecord) -> PushDay {
@@ -363,6 +398,9 @@ struct PushHomeView: View {
             .ignoresSafeArea(.container, edges: .bottom)
         }
         .preferredColorScheme(.dark)
+        .task {
+            viewModel.prewarmHaptics()
+        }
     }
 
     private var backgroundGlow: some View {
@@ -541,10 +579,9 @@ struct PushDayColumn: View {
         VStack(spacing: 8) {
             ZStack(alignment: .bottom) {
                 if day.isToday, let amount = activeAddAmount {
-                    AddEnergyBurst(amount: amount)
+                    AddColumnGlow(amount: amount)
                         .id(addPulseID)
-                        .frame(width: 68, height: stackHeight)
-                        .offset(x: 26)
+                        .frame(width: max(74, squareSize * 5.2), height: stackHeight)
                         .transition(.opacity)
                 }
 
@@ -654,49 +691,49 @@ struct PushDayColumn: View {
     }
 }
 
-struct AddEnergyBurst: View {
+struct AddColumnGlow: View {
     let amount: Int
-    @State private var expanded = false
+    @State private var isGlowing = false
 
     var body: some View {
-        ZStack(alignment: .trailing) {
-            LinearGradient(
-                colors: [burstColor.opacity(0.5), .clear],
-                startPoint: .trailing,
-                endPoint: .leading
-            )
-            .frame(width: amount >= 25 ? 42 : 22)
-            .blur(radius: 10)
-            .opacity(expanded ? 0.65 : 0)
+        ZStack {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [glowColor.opacity(0.05), glowColor.opacity(0.34), glowColor.opacity(0.05)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .blur(radius: 16)
 
-            ForEach(0..<lineCount, id: \.self) { index in
-                Capsule()
-                    .fill(burstColor.opacity(amount >= 25 ? 0.95 : 0.52))
-                    .frame(width: lineWidth(for: index), height: amount >= 25 ? 2 : 1.4)
-                    .offset(x: expanded ? CGFloat(18 + index * 5) : 0, y: CGFloat(index - lineCount / 2) * verticalSpacing)
-                    .opacity(expanded ? 0 : 1)
-                    .animation(.easeOut(duration: amount >= 25 ? 0.65 : 0.34).delay(Double(index) * 0.018), value: expanded)
-            }
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(glowColor.opacity(0.22))
+                .blur(radius: 28)
+                .scaleEffect(x: isGlowing ? 1.22 : 0.74, y: isGlowing ? 1.05 : 0.88)
         }
+        .opacity(isGlowing ? glowOpacity : 0)
+        .scaleEffect(x: isGlowing ? 1 : 0.82, y: 1)
+        .animation(.easeOut(duration: amount >= 25 ? 0.56 : 0.34), value: isGlowing)
         .onAppear {
-            expanded = true
+            isGlowing = true
         }
     }
 
-    private func lineWidth(for index: Int) -> CGFloat {
-        let widths: [CGFloat] = [18, 34, 24, 48, 29, 54, 21, 42, 31, 50, 26, 37, 45, 22]
-        return widths[index % widths.count]
+    private var glowOpacity: Double {
+        switch amount {
+        case 25...:
+            0.9
+        case 10...:
+            0.78
+        case 5...:
+            0.66
+        default:
+            0.52
+        }
     }
 
-    private var lineCount: Int {
-        amount >= 25 ? 14 : amount >= 10 ? 9 : amount >= 5 ? 5 : 2
-    }
-
-    private var verticalSpacing: CGFloat {
-        amount >= 25 ? 13 : 8
-    }
-
-    private var burstColor: Color {
+    private var glowColor: Color {
         switch amount {
         case 25...:
             PushPalette.magenta
@@ -1041,10 +1078,14 @@ final class PushHaptics {
     private let mediumImpact = UIImpactFeedbackGenerator(style: .medium)
     private let rigidImpact = UIImpactFeedbackGenerator(style: .rigid)
 
-    func start(amount: Int) {
+    func prewarm() {
         lightImpact.prepare()
         mediumImpact.prepare()
         rigidImpact.prepare()
+    }
+
+    func start(amount: Int) {
+        prewarm()
     }
 
     func repAdded(index: Int, total: Int) {
@@ -1100,7 +1141,7 @@ enum PushPalette {
     static let purple = Color(red: 0.50, green: 0.12, blue: 0.72)
     static let todaySquare = Color.white
 
-    static let weekColors = [yellow, orange, coral, pink, magenta, purple, yellow]
+    static let weekColors = [yellow, orange, coral, pink, magenta, purple]
 }
 
 #Preview {
