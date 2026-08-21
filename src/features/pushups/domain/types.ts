@@ -1,0 +1,23 @@
+export type DayKey = `${number}-${number}-${number}`;
+
+export type PushDayRecord = {
+  dayKey: DayKey;
+  reps: number;
+  colorIndex: number;
+};
+
+export type PushDay = PushDayRecord & {
+  id: DayKey;
+  weekday: string;
+  isToday: boolean;
+};
+
+export type PushStats = {
+  lifetimePushUps: number;
+  currentStreak: number;
+  longestStreak: number;
+  bestDay: number;
+  dailyAverage: number;
+  activeDaysPercentage: number;
+};
+
