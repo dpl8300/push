@@ -1,8 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Animated, {
   useAnimatedStyle,
+  useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
 
@@ -167,9 +168,18 @@ function RepSquare({ repIndex, squareSize, color, isToday, isHighlighted }: RepS
   const rowIndex = Math.floor(repIndex / 3);
   const positionInRow = repIndex % 3;
   const column = [1, 0, 2][positionInRow] ?? 0;
+  const scale = useSharedValue(isHighlighted ? 0.2 : 1);
+
+  useEffect(() => {
+    scale.value = withSpring(isHighlighted ? 1.9 : 1, {
+      damping: 12,
+      stiffness: 390,
+    });
+  }, [isHighlighted, scale]);
+
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: withSpring(isHighlighted ? 1.9 : 1, { damping: 12, stiffness: 390 }) }],
-  }), [isHighlighted]);
+    transform: [{ scale: scale.value }],
+  }));
   const positionStyle = {
     left: column * (squareSize + SQUARE_GAP),
     bottom: rowIndex * (squareSize + SQUARE_GAP),
@@ -366,4 +376,3 @@ const styles = StyleSheet.create({
     color: Colors.black,
   },
 });
-

@@ -82,9 +82,11 @@ export function usePushHome() {
     let committed: PushDayRecord[] | null = null;
 
     try {
-      committed = await repository.addReps(todayKey, amount);
-      const committedToday = committed.find((record) => record.dayKey === todayKey);
-      const todayColorIndex = committedToday?.colorIndex ?? 0;
+      const persistence = repository.addReps(todayKey, amount).then(
+        (nextRecords) => ({ ok: true as const, records: nextRecords }),
+        (persistenceError: unknown) => ({ ok: false as const, error: persistenceError }),
+      );
+      const todayColorIndex = baseline.find((record) => record.dayKey === todayKey)?.colorIndex ?? 0;
       const cadence = repCadenceMs(amount);
 
       for (let index = 0; index < amount; index += 1) {
@@ -105,17 +107,18 @@ export function usePushHome() {
         }
       }
 
+      const persistenceResult = await persistence;
+      if (!persistenceResult.ok) throw persistenceResult.error;
+
+      committed = persistenceResult.records;
       recordsRef.current = committed;
       setRecords(committed);
       await safelyPlay(() => playCompletionHaptic(amount));
       await wait(320);
     } catch (addError) {
-      if (committed) {
-        recordsRef.current = committed;
-        setRecords(committed);
-      } else {
-        setError(messageForError(addError));
-      }
+      recordsRef.current = committed ?? baseline;
+      setRecords(committed ?? baseline);
+      setError(messageForError(addError));
     } finally {
       setHighlightedRepIndex(null);
       setActiveAddAmount(null);
