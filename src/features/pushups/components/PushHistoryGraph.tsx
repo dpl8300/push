@@ -2,10 +2,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated';
+import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { Colors, WeekColors } from '@/design-system/tokens';
 import { Typography } from '@/design-system/typography';
@@ -217,20 +220,58 @@ function ColumnGlow({ amount, width, height }: { amount: number; width: number; 
         ? Colors.orange
         : Colors.yellow;
   const opacity = amount >= 25 ? 0.9 : amount >= 10 ? 0.78 : amount >= 5 ? 0.66 : 0.52;
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.value = withTiming(1, {
+      duration: amount >= 25 ? 560 : 340,
+      easing: Easing.out(Easing.ease),
+    });
+  }, [amount, progress]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity * progress.value,
+    transform: [
+      { scaleX: 0.82 + progress.value * 0.18 },
+      { scaleY: 0.88 + progress.value * 0.12 },
+    ],
+  }));
 
   return (
-    <View
+    <Animated.View
+      pointerEvents="none"
       style={[
         styles.columnGlow,
-        {
-          width,
-          height,
-          opacity,
-          backgroundColor: `${color}36`,
-          shadowColor: color,
-        },
+        { width, height },
+        animatedStyle,
       ]}
-    />
+    >
+      <Svg width="100%" height="100%">
+        <Defs>
+          <RadialGradient id="columnGlowOuter" cx="50%" cy="50%" rx="50%" ry="50%">
+            <Stop offset="0%" stopColor={color} stopOpacity={0.22} />
+            <Stop offset="48%" stopColor={color} stopOpacity={0.14} />
+            <Stop offset="78%" stopColor={color} stopOpacity={0.05} />
+            <Stop offset="100%" stopColor={color} stopOpacity={0} />
+          </RadialGradient>
+          <RadialGradient id="columnGlowCore" cx="50%" cy="50%" rx="50%" ry="50%">
+            <Stop offset="0%" stopColor={color} stopOpacity={0.34} />
+            <Stop offset="34%" stopColor={color} stopOpacity={0.2} />
+            <Stop offset="70%" stopColor={color} stopOpacity={0.05} />
+            <Stop offset="100%" stopColor={color} stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Rect width="100%" height="100%" rx={22} fill="url(#columnGlowOuter)" />
+        <Rect
+          x="12%"
+          y="6%"
+          width="76%"
+          height="88%"
+          rx={16}
+          fill="url(#columnGlowCore)"
+        />
+      </Svg>
+    </Animated.View>
   );
 }
 
@@ -334,9 +375,6 @@ const styles = StyleSheet.create({
   columnGlow: {
     position: 'absolute',
     bottom: 0,
-    borderRadius: 22,
-    shadowOpacity: 0.48,
-    shadowRadius: 28,
   },
   todayBadge: {
     position: 'absolute',
