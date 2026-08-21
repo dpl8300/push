@@ -109,6 +109,10 @@ final class PushHomeViewModel {
     }
 
     var motivationText: String {
+        if todayReps == 0 {
+            return "1 push-up keeps your streak alive"
+        }
+
         if todayReps <= yesterdayReps {
             return "\(yesterdayReps - todayReps + 1) more to beat yesterday"
         }
