@@ -271,10 +271,16 @@ final class PushHomeViewModel {
 
     private static func currentStreak(in records: [PushDayRecord]) -> Int {
         let calendar = Calendar.current
-        var day = calendar.startOfDay(for: .now)
+        let today = calendar.startOfDay(for: .now)
         let repsByDay = Dictionary(uniqueKeysWithValues: records.map { ($0.dayStart, $0.reps) })
-        var streak = 0
+        var day = today
 
+        if (repsByDay[today] ?? 0) == 0 {
+            guard let previousDay = calendar.date(byAdding: .day, value: -1, to: today) else { return 0 }
+            day = previousDay
+        }
+
+        var streak = 0
         while (repsByDay[day] ?? 0) > 0 {
             streak += 1
             guard let previousDay = calendar.date(byAdding: .day, value: -1, to: day) else { break }
@@ -302,9 +308,10 @@ final class PushHomeViewModel {
     }
 
     private static func currentStreak(in days: [PushDay]) -> Int {
+        let streakDays = days.last?.reps == 0 ? days.dropLast() : days[...]
         var streak = 0
 
-        for day in days.reversed() {
+        for day in streakDays.reversed() {
             guard day.reps > 0 else { break }
             streak += 1
         }
