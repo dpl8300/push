@@ -20,7 +20,6 @@ const mockUsePushHome = jest.fn(() => ({
   error: null,
   highlightedRepIndex: null,
   activeAddAmount: null,
-  addTargetReps: null,
   addPulseKey: 0,
   addPushUps: jest.fn(),
   retry: jest.fn(),

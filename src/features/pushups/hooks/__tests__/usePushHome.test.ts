@@ -28,6 +28,7 @@ jest.mock('@/lib/haptics', () => ({
 // eslint-disable-next-line import/first, import/order
 import { usePushHome } from '../usePushHome';
 
+const mockWait = jest.requireMock('@/lib/haptics').wait as jest.Mock;
 const todayKey = toDayKey(new Date()) as DayKey;
 const baseline: PushDayRecord[] = [{ dayKey: todayKey, reps: 0, colorIndex: 0 }];
 
@@ -35,6 +36,7 @@ describe('usePushHome optimistic additions', () => {
   beforeEach(() => {
     mockRepository.getHistoryThrough.mockReset().mockResolvedValue(baseline);
     mockRepository.addReps.mockReset();
+    mockWait.mockClear();
   });
 
   it('shows the first rep before delayed persistence resolves and reconciles without doubling', async () => {
@@ -52,6 +54,7 @@ describe('usePushHome optimistic additions', () => {
     expect(result.current.todayReps).toBe(1);
     expect(result.current.highlightedRepIndex).toBe(0);
     expect(result.current.isAdding).toBe(true);
+    expect(mockWait).not.toHaveBeenCalled();
 
     await act(async () => {
       persistence.resolve([{ dayKey: todayKey, reps: 1, colorIndex: 0 }]);

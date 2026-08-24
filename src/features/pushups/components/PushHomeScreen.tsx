@@ -29,7 +29,6 @@ export function PushHomeScreen() {
     error,
     highlightedRepIndex,
     activeAddAmount,
-    addTargetReps,
     addPulseKey,
     addPushUps,
     retry,
@@ -87,7 +86,6 @@ export function PushHomeScreen() {
             days={visibleWeek}
             highlightedRepIndex={highlightedRepIndex}
             activeAddAmount={activeAddAmount}
-            addTargetReps={addTargetReps}
             addPulseKey={addPulseKey}
           />
         </View>

@@ -1,8 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Animated, {
   Easing,
+  type SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
@@ -10,6 +11,12 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+
+import {
+  BOTTOM_LABEL_HEIGHT,
+  SQUARE_GAP,
+  calculateGraphMetrics,
+} from './push-history-graph-metrics';
 
 import { Colors, WeekColors } from '@/design-system/tokens';
 import { Typography } from '@/design-system/typography';
@@ -19,32 +26,39 @@ type PushHistoryGraphProps = {
   days: readonly PushDay[];
   highlightedRepIndex: number | null;
   activeAddAmount: number | null;
-  addTargetReps: number | null;
   addPulseKey: number;
 };
 
 type Size = { width: number; height: number };
 
-const AXIS_WIDTH = 34;
-const BOTTOM_LABEL_HEIGHT = 34;
-const SQUARE_GAP = 0.7;
-const PREVIOUS_MAX_SQUARE_SIZE = 13.9;
-const MAX_SQUARE_SIZE = 16.5;
-const COLUMN_GAP_RATIO = 0.5;
-const SQUARE_RESIZE_DURATION = 180;
+const SQUARE_RESIZE_DURATION = 150;
 
 export function PushHistoryGraph({
   days,
   highlightedRepIndex,
   activeAddAmount,
-  addTargetReps,
   addPulseKey,
 }: PushHistoryGraphProps) {
   const [size, setSize] = useState<Size>({ width: 0, height: 0 });
-  const metrics = useMemo(
-    () => calculateMetrics(days, size, addTargetReps),
-    [addTargetReps, days, size],
-  );
+  const metrics = useMemo(() => calculateGraphMetrics(days, size), [days, size]);
+  const targetSquareSize = metrics?.squareSize ?? null;
+  const displayedSquareSize = useSharedValue(0);
+  const hasInitialSquareSize = useRef(false);
+
+  useLayoutEffect(() => {
+    if (targetSquareSize === null) return;
+
+    if (!hasInitialSquareSize.current) {
+      displayedSquareSize.value = targetSquareSize;
+      hasInitialSquareSize.current = true;
+      return;
+    }
+
+    displayedSquareSize.value = withTiming(targetSquareSize, {
+      duration: SQUARE_RESIZE_DURATION,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [displayedSquareSize, targetSquareSize]);
 
   const onLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -71,8 +85,9 @@ export function PushHistoryGraph({
               day={day}
               left={metrics.axisWidth + metrics.slotWidth * index}
               slotWidth={metrics.slotWidth}
-              squareSize={metrics.squareSize}
-              stackHeight={metrics.stackHeight}
+              squareSize={displayedSquareSize}
+              targetSquareSize={metrics.squareSize}
+              glowHeight={metrics.safeTowerHeight}
               chartHeight={metrics.chartHeight}
               highlightedRepIndex={day.isToday ? highlightedRepIndex : null}
               activeAddAmount={day.isToday ? activeAddAmount : null}
@@ -89,8 +104,9 @@ type DayColumnProps = {
   day: PushDay;
   left: number;
   slotWidth: number;
-  squareSize: number;
-  stackHeight: number;
+  squareSize: SharedValue<number>;
+  targetSquareSize: number;
+  glowHeight: number;
   chartHeight: number;
   highlightedRepIndex: number | null;
   activeAddAmount: number | null;
@@ -102,7 +118,8 @@ function DayColumn({
   left,
   slotWidth,
   squareSize,
-  stackHeight,
+  targetSquareSize,
+  glowHeight,
   chartHeight,
   highlightedRepIndex,
   activeAddAmount,
@@ -113,6 +130,18 @@ function DayColumn({
     [day.reps],
   );
   const rowCount = Math.ceil(day.reps / 3);
+  const displayedRowCount = useSharedValue(rowCount);
+
+  useEffect(() => {
+    displayedRowCount.value = withTiming(rowCount, {
+      duration: SQUARE_RESIZE_DURATION,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [displayedRowCount, rowCount]);
+
+  const badgeStyle = useAnimatedStyle(() => ({
+    bottom: displayedRowCount.value * (squareSize.value + SQUARE_GAP) + 13,
+  }));
 
   return (
     <View
@@ -132,13 +161,13 @@ function DayColumn({
           <ColumnGlow
             key={addPulseKey}
             amount={activeAddAmount}
-            width={Math.max(74, squareSize * 5.2)}
-            height={stackHeight}
+            width={Math.max(74, targetSquareSize * 5.2)}
+            height={glowHeight}
           />
         ) : null}
 
         <View
-          style={[styles.squareStack, { height: stackHeight, width: slotWidth }]}
+          style={[styles.squareStack, { height: chartHeight, width: slotWidth }]}
         >
           {repIndices.map((repIndex) => (
             <RepSquare
@@ -154,14 +183,9 @@ function DayColumn({
         </View>
 
         {day.isToday ? (
-          <View
-            style={[
-              styles.todayBadge,
-              { bottom: rowCount * (squareSize + SQUARE_GAP) + 13 },
-            ]}
-          >
+          <Animated.View style={[styles.todayBadge, badgeStyle]}>
             <Text style={styles.todayBadgeText}>{day.reps}</Text>
-          </View>
+          </Animated.View>
         ) : null}
       </View>
 
@@ -174,14 +198,14 @@ function DayColumn({
 
 type RepSquareProps = {
   repIndex: number;
-  squareSize: number;
+  squareSize: SharedValue<number>;
   slotWidth: number;
   color: string;
   isToday: boolean;
   isHighlighted: boolean;
 };
 
-function RepSquare({
+const RepSquare = memo(function RepSquare({
   repIndex,
   squareSize,
   slotWidth,
@@ -192,15 +216,7 @@ function RepSquare({
   const rowIndex = Math.floor(repIndex / 3);
   const positionInRow = repIndex % 3;
   const column = [1, 0, 2][positionInRow] ?? 0;
-  const displayedSquareSize = useSharedValue(squareSize);
-  const translateY = useSharedValue(isHighlighted ? -Math.min(8, squareSize * 0.65) : 0);
-
-  useEffect(() => {
-    displayedSquareSize.value = withTiming(squareSize, {
-      duration: SQUARE_RESIZE_DURATION,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, [displayedSquareSize, squareSize]);
+  const translateY = useSharedValue(isHighlighted ? -6 : 0);
 
   useEffect(() => {
     const settle = {
@@ -228,7 +244,7 @@ function RepSquare({
   }, [isHighlighted, translateY]);
 
   const animatedStyle = useAnimatedStyle(() => {
-    const size = displayedSquareSize.value;
+    const size = squareSize.value;
     const towerWidth = size * 3 + SQUARE_GAP * 2;
 
     return {
@@ -259,7 +275,7 @@ function RepSquare({
       )}
     </Animated.View>
   );
-}
+});
 
 function ColumnGlow({ amount, width, height }: { amount: number; width: number; height: number }) {
   const color = amount >= 25
@@ -323,54 +339,6 @@ function ColumnGlow({ amount, width, height }: { amount: number; width: number; 
       </Svg>
     </Animated.View>
   );
-}
-
-function calculateMetrics(
-  days: readonly PushDay[],
-  size: Size,
-  addTargetReps: number | null,
-) {
-  if (size.width <= 0 || size.height <= 0) return null;
-
-  const visibleMax = Math.max(
-    ...days.map((day) => (
-      day.isToday && addTargetReps !== null
-        ? Math.max(day.reps, addTargetReps)
-        : day.reps
-    )),
-    1,
-  );
-  const rawStep = visibleMax / 4;
-  const step = Math.max(10, Math.ceil(rawStep / 5) * 5);
-  const axisMax = step * 4;
-  const axisValues = [axisMax, axisMax - step, axisMax - step * 2, step, 0];
-  const towerScale = Math.max(90, ...days.map((day) => day.reps));
-  const chartHeight = Math.max(1, size.height - BOTTOM_LABEL_HEIGHT);
-  const maxRows = Math.max(1, Math.ceil(towerScale / 3));
-  const slotWidth = (size.width - AXIS_WIDTH) / Math.max(days.length, 1);
-  const previousTowerWidth = PREVIOUS_MAX_SQUARE_SIZE * 3 + SQUARE_GAP * 2;
-  const previousColumnGap = Math.max(0, slotWidth - previousTowerWidth);
-  const targetTowerWidth = slotWidth - previousColumnGap * COLUMN_GAP_RATIO;
-  const horizontalSquareSize = (targetTowerWidth - SQUARE_GAP * 2) / 3;
-  const squareSize = Math.max(
-    2,
-    Math.min(
-      MAX_SQUARE_SIZE,
-      horizontalSquareSize,
-      (chartHeight - (maxRows - 1) * SQUARE_GAP) / maxRows,
-    ),
-  );
-  const stackHeight = maxRows * squareSize + (maxRows - 1) * SQUARE_GAP;
-
-  return {
-    axisWidth: AXIS_WIDTH,
-    axisMax,
-    axisValues,
-    chartHeight,
-    squareSize,
-    stackHeight,
-    slotWidth,
-  };
 }
 
 const styles = StyleSheet.create({
