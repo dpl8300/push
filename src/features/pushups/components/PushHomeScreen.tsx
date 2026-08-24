@@ -16,6 +16,9 @@ export function PushHomeScreen() {
   const router = useRouter();
   const { height } = useWindowDimensions();
   const compact = height < 760;
+  const graphHeight = compact
+    ? Math.max(176, Math.min(200, height * 0.27))
+    : Math.max(230, Math.min(270, height * 0.305));
   const {
     visibleWeek,
     stats,
@@ -26,6 +29,7 @@ export function PushHomeScreen() {
     error,
     highlightedRepIndex,
     activeAddAmount,
+    addTargetReps,
     addPulseKey,
     addPushUps,
     retry,
@@ -76,11 +80,14 @@ export function PushHomeScreen() {
           </View>
         </View>
 
-        <View style={[styles.graph, compact && styles.compactGraph]}>
+        <View
+          style={[styles.graph, { height: graphHeight }]}
+        >
           <PushHistoryGraph
             days={visibleWeek}
             highlightedRepIndex={highlightedRepIndex}
             activeAddAmount={activeAddAmount}
+            addTargetReps={addTargetReps}
             addPulseKey={addPulseKey}
           />
         </View>
@@ -226,13 +233,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   graph: {
-    height: '34%',
-    minHeight: 205,
-    maxHeight: 300,
-  },
-  compactGraph: {
-    minHeight: 176,
-    height: '31%',
+    flexShrink: 0,
   },
   spacer: {
     flex: 1,

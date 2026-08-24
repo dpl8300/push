@@ -26,6 +26,7 @@ export function usePushHome() {
   const [error, setError] = useState<string | null>(null);
   const [highlightedRepIndex, setHighlightedRepIndex] = useState<number | null>(null);
   const [activeAddAmount, setActiveAddAmount] = useState<number | null>(null);
+  const [addTargetReps, setAddTargetReps] = useState<number | null>(null);
   const [addPulseKey, setAddPulseKey] = useState(0);
 
   useEffect(() => {
@@ -72,14 +73,15 @@ export function usePushHome() {
       return;
     }
 
-    setIsAdding(true);
-    setError(null);
-    setActiveAddAmount(amount);
-    setAddPulseKey((key) => key + 1);
-
     const baseline = recordsRef.current;
     const baselineTodayReps = repsForDay(baseline, todayKey);
     let committed: PushDayRecord[] | null = null;
+
+    setIsAdding(true);
+    setError(null);
+    setActiveAddAmount(amount);
+    setAddTargetReps(baselineTodayReps + amount);
+    setAddPulseKey((key) => key + 1);
 
     try {
       const persistence = repository.addReps(todayKey, amount).then(
@@ -88,6 +90,9 @@ export function usePushHome() {
       );
       const todayColorIndex = baseline.find((record) => record.dayKey === todayKey)?.colorIndex ?? 0;
       const cadence = repCadenceMs(amount);
+
+      // Let the existing tower finish resizing to the reserved scale before new reps appear.
+      await wait(200);
 
       for (let index = 0; index < amount; index += 1) {
         const displayedReps = baselineTodayReps + index + 1;
@@ -122,6 +127,7 @@ export function usePushHome() {
     } finally {
       setHighlightedRepIndex(null);
       setActiveAddAmount(null);
+      setAddTargetReps(null);
       setIsAdding(false);
     }
   }, [isAdding, repository, todayKey]);
@@ -147,6 +153,7 @@ export function usePushHome() {
     error,
     highlightedRepIndex,
     activeAddAmount,
+    addTargetReps,
     addPulseKey,
     addPushUps,
     retry: loadHistory,
