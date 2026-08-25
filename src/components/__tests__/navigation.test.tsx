@@ -1,4 +1,5 @@
-import { fireEvent, render } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { Linking } from 'react-native';
 
 const mockPush = jest.fn();
 const mockBack = jest.fn();
@@ -88,16 +89,21 @@ jest.mock('@/features/pushups/hooks/usePushProgress', () => ({
 
 // These imports must follow the mocks so the components receive the test doubles.
 // eslint-disable-next-line import/first
+import { APP_URLS } from '@/config/app-urls';
+// eslint-disable-next-line import/first
 import { PushHomeScreen } from '@/features/pushups/components/PushHomeScreen';
 // eslint-disable-next-line import/first
 import { PushProgressScreen } from '@/features/pushups/components/PushProgressScreen';
 
 describe('navigation', () => {
+  const openURL = jest.spyOn(Linking, 'openURL');
+
   beforeEach(() => {
     mockPush.mockReset();
     mockBack.mockReset();
     mockReplace.mockReset();
     mockCanGoBack.mockReset().mockReturnValue(true);
+    openURL.mockReset().mockResolvedValue(undefined);
   });
 
   it('opens Progress from the link below the stats without making the graph a control', async () => {
@@ -126,5 +132,39 @@ describe('navigation', () => {
 
     expect(mockBack).not.toHaveBeenCalled();
     expect(mockReplace).toHaveBeenCalledWith('/');
+  });
+
+  it('opens the Progress privacy and support links', async () => {
+    const screen = await render(<PushProgressScreen />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByRole('link', { name: 'Open Privacy Policy' }));
+      await Promise.resolve();
+    });
+    await act(async () => {
+      fireEvent.press(screen.getByRole('link', { name: 'Open Support' }));
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(openURL).toHaveBeenNthCalledWith(1, APP_URLS.privacyPolicy);
+      expect(openURL).toHaveBeenNthCalledWith(2, APP_URLS.support);
+    });
+    expect(screen.getByText('Your push-up history stays on this device.')).toBeTruthy();
+    expect(screen.getByText('Version 1.0.0')).toBeTruthy();
+  });
+
+  it('shows a recoverable message when an external link cannot open', async () => {
+    openURL.mockRejectedValueOnce(new Error('No browser'));
+    const screen = await render(<PushProgressScreen />);
+
+    await act(async () => {
+      fireEvent.press(screen.getByRole('link', { name: 'Open Privacy Policy' }));
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Unable to open the link. Please try again.')).toBeTruthy();
+    });
   });
 });

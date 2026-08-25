@@ -15,6 +15,7 @@ import { ProgressDayCard } from './ProgressDayCard';
 import { ProgressSummaryStrip } from './ProgressSummaryStrip';
 
 import { BrandBackground } from '@/components/BrandBackground';
+import { ProgressComplianceFooter } from '@/components/ProgressComplianceFooter';
 import { PlatformIcon } from '@/design-system/PlatformIcon';
 import { Colors, Layout } from '@/design-system/tokens';
 import { Typography } from '@/design-system/typography';
@@ -120,6 +121,8 @@ export function PushProgressScreen() {
             compact={compact}
             onAdjust={(delta) => void adjustSelectedDay(delta)}
           />
+
+          <ProgressComplianceFooter />
         </View>
       </ScrollView>
     </SafeAreaView>

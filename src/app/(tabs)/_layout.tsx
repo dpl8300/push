@@ -12,7 +12,6 @@ export default function AppLayout() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="progress" />
-      <Stack.Screen name="settings" />
     </Stack>
   );
 }

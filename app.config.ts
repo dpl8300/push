@@ -16,6 +16,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     bundleIdentifier: isDevelopment ? 'dpl8300.push.dev' : 'dpl8300.push',
     supportsTablet: false,
     icon: './assets/images/icon.png',
+    config: {
+      usesNonExemptEncryption: false,
+    },
   },
   android: {
     package: isDevelopment ? 'dpl8300.push.dev' : 'dpl8300.push',
