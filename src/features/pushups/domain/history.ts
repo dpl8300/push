@@ -53,3 +53,21 @@ export function fillRecordGaps(
 export function positiveModulo(value: number, divisor: number): number {
   return ((value % divisor) + divisor) % divisor;
 }
+
+export function colorIndexForDay(
+  records: readonly PushDayRecord[],
+  dayKey: DayKey,
+): number {
+  const existing = records.find((record) => record.dayKey === dayKey);
+  if (existing) return existing.colorIndex;
+
+  const reference = [...records].sort((left, right) => (
+    left.dayKey.localeCompare(right.dayKey)
+  ))[0];
+  if (!reference) return 0;
+
+  return positiveModulo(
+    reference.colorIndex + daysBetween(reference.dayKey, dayKey),
+    WeekColors.length,
+  );
+}

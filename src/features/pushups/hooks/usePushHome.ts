@@ -1,3 +1,4 @@
+import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -32,7 +33,7 @@ export function usePushHome() {
     recordsRef.current = records;
   }, [records]);
 
-  const loadHistory = useCallback(async (dayKey: DayKey = todayKey) => {
+  const loadHistory = useCallback(async (dayKey: DayKey) => {
     try {
       const history = await repository.getHistoryThrough(dayKey);
       setError(null);
@@ -43,27 +44,31 @@ export function usePushHome() {
     } finally {
       setIsLoading(false);
     }
-  }, [repository, todayKey]);
+  }, [repository]);
 
-  useEffect(() => {
+  const refresh = useCallback(async () => {
+    const nextTodayKey = toDayKey(new Date());
+    setTodayKey(nextTodayKey);
+    await loadHistory(nextTodayKey);
+  }, [loadHistory]);
+
+  useFocusEffect(useCallback(() => {
     const timeout = setTimeout(() => {
-      void loadHistory();
+      void refresh();
     }, 0);
 
     return () => clearTimeout(timeout);
-  }, [loadHistory]);
+  }, [refresh]));
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState !== 'active' || isAdding) return;
 
-      const nextTodayKey = toDayKey(new Date());
-      setTodayKey(nextTodayKey);
-      void loadHistory(nextTodayKey);
+      void refresh();
     });
 
     return () => subscription.remove();
-  }, [isAdding, loadHistory]);
+  }, [isAdding, refresh]);
 
   const addPushUps = useCallback(async (amount: number) => {
     if (isAdding) return;
@@ -149,7 +154,7 @@ export function usePushHome() {
     activeAddAmount,
     addPulseKey,
     addPushUps,
-    retry: loadHistory,
+    retry: refresh,
     clearError: () => setError(null),
   };
 }

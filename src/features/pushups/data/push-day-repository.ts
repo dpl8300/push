@@ -14,6 +14,7 @@ type PushDayRow = {
 export interface PushDayRepository {
   getHistoryThrough(todayKey: DayKey): Promise<PushDayRecord[]>;
   addReps(dayKey: DayKey, amount: number): Promise<PushDayRecord[]>;
+  adjustReps(dayKey: DayKey, delta: -1 | 1, throughDay: DayKey): Promise<PushDayRecord[]>;
 }
 
 export class SQLitePushDayRepository implements PushDayRepository {
@@ -72,6 +73,66 @@ export class SQLitePushDayRepository implements PushDayRepository {
     return this.getHistoryThrough(dayKey);
   }
 
+  async adjustReps(
+    dayKey: DayKey,
+    delta: -1 | 1,
+    throughDay: DayKey,
+  ): Promise<PushDayRecord[]> {
+    if (delta !== -1 && delta !== 1) {
+      throw new Error('Push-up adjustment must be either -1 or 1.');
+    }
+    if (dayKey > throughDay) {
+      throw new Error('Future push-up totals cannot be changed.');
+    }
+
+    await this.db.withExclusiveTransactionAsync(async (transaction) => {
+      const existing = await transaction.getFirstAsync<PushDayRow>(
+        `SELECT day_key, reps, color_index
+         FROM push_day_records
+         WHERE day_key = ?`,
+        dayKey,
+      );
+
+      if (existing) {
+        const nextReps = Math.max(0, existing.reps + delta);
+        if (nextReps !== existing.reps) {
+          await transaction.runAsync(
+            `UPDATE push_day_records
+             SET reps = ?
+             WHERE day_key = ?`,
+            nextReps,
+            dayKey,
+          );
+        }
+        return;
+      }
+
+      if (delta < 0) return;
+
+      const reference = await transaction.getFirstAsync<PushDayRow>(
+        `SELECT day_key, reps, color_index
+         FROM push_day_records
+         ORDER BY day_key ASC
+         LIMIT 1`,
+      );
+      const colorIndex = reference
+        ? positiveModulo(
+          reference.color_index + daysBetween(reference.day_key as DayKey, dayKey),
+          WeekColors.length,
+        )
+        : 0;
+
+      await transaction.runAsync(
+        `INSERT INTO push_day_records (day_key, reps, color_index)
+         VALUES (?, 1, ?)`,
+        dayKey,
+        colorIndex,
+      );
+    });
+
+    return this.getHistoryThrough(throughDay);
+  }
+
   private async readRecordsThrough(todayKey: DayKey): Promise<PushDayRecord[]> {
     const rows = await this.db.getAllAsync<PushDayRow>(
       `SELECT day_key, reps, color_index
@@ -88,4 +149,3 @@ export class SQLitePushDayRepository implements PushDayRepository {
     }));
   }
 }
-

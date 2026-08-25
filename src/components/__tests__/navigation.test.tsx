@@ -25,6 +25,27 @@ const mockUsePushHome = jest.fn(() => ({
   retry: jest.fn(),
   clearError: jest.fn(),
 }));
+const mockUsePushProgress = jest.fn(() => ({
+  displayedMonthKey: '2026-08-01',
+  selectedDayKey: '2026-08-20',
+  selectedReps: 10,
+  calendarDays: [],
+  monthStats: {
+    totalPushUps: 120,
+    activeDays: 8,
+    bestDay: 30,
+  },
+  isLoading: false,
+  isAdjusting: false,
+  error: null,
+  canGoToNextMonth: false,
+  selectDay: jest.fn(),
+  goToPreviousMonth: jest.fn(),
+  goToNextMonth: jest.fn(),
+  adjustSelectedDay: jest.fn(),
+  retry: jest.fn(),
+  clearError: jest.fn(),
+}));
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({
@@ -61,11 +82,15 @@ jest.mock('@/features/pushups/hooks/usePushHome', () => ({
   usePushHome: () => mockUsePushHome(),
 }));
 
+jest.mock('@/features/pushups/hooks/usePushProgress', () => ({
+  usePushProgress: () => mockUsePushProgress(),
+}));
+
 // These imports must follow the mocks so the components receive the test doubles.
 // eslint-disable-next-line import/first
-import { ComingSoonScreen } from '@/components/ComingSoonScreen';
-// eslint-disable-next-line import/first
 import { PushHomeScreen } from '@/features/pushups/components/PushHomeScreen';
+// eslint-disable-next-line import/first
+import { PushProgressScreen } from '@/features/pushups/components/PushProgressScreen';
 
 describe('navigation', () => {
   beforeEach(() => {
@@ -85,14 +110,7 @@ describe('navigation', () => {
   });
 
   it('returns through navigation history from Progress', async () => {
-    const screen = await render(
-      <ComingSoonScreen
-        title="Progress"
-        description="Progress details"
-        icon="chart.bar.fill"
-        androidIcon="bar_chart"
-      />,
-    );
+    const screen = await render(<PushProgressScreen />);
 
     fireEvent.press(screen.getByRole('button', { name: 'Back to home' }));
 
@@ -102,14 +120,7 @@ describe('navigation', () => {
 
   it('falls back to Home when Progress has no navigation history', async () => {
     mockCanGoBack.mockReturnValue(false);
-    const screen = await render(
-      <ComingSoonScreen
-        title="Progress"
-        description="Progress details"
-        icon="chart.bar.fill"
-        androidIcon="bar_chart"
-      />,
-    );
+    const screen = await render(<PushProgressScreen />);
 
     fireEvent.press(screen.getByRole('button', { name: 'Back to home' }));
 

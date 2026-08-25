@@ -21,3 +21,20 @@ export type PushStats = {
   activeDaysPercentage: number;
 };
 
+export type ProgressMonthStats = {
+  totalPushUps: number;
+  activeDays: number;
+  bestDay: number;
+};
+
+export type ProgressCalendarDay = {
+  id: DayKey;
+  dayKey: DayKey;
+  dayNumber: number;
+  reps: number;
+  colorIndex: number;
+  isInDisplayedMonth: boolean;
+  isToday: boolean;
+  isFuture: boolean;
+  isSelected: boolean;
+};

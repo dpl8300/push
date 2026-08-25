@@ -7,7 +7,15 @@ import type { DayKey, PushDayRecord } from '@/features/pushups/domain/types';
 const mockRepository: jest.Mocked<PushDayRepository> = {
   getHistoryThrough: jest.fn(),
   addReps: jest.fn(),
+  adjustReps: jest.fn(),
 };
+
+jest.mock('expo-router', () => {
+  const React = jest.requireActual('react');
+  return {
+    useFocusEffect: (callback: () => void | (() => void)) => React.useEffect(callback, [callback]),
+  };
+});
 
 jest.mock('expo-sqlite', () => ({
   useSQLiteContext: () => ({}),
