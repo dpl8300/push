@@ -14,6 +14,7 @@ jest.mock('expo-router', () => {
   const React = jest.requireActual('react');
   return {
     useFocusEffect: (callback: () => void | (() => void)) => React.useEffect(callback, [callback]),
+    useIsFocused: () => true,
   };
 });
 
@@ -96,7 +97,7 @@ describe('usePushHome optimistic additions', () => {
     expect(result.current.todayReps).toBe(0);
     expect(result.current.highlightedRepIndex).toBeNull();
     expect(result.current.isAdding).toBe(false);
-    expect(result.current.error).toBe('Database unavailable');
+    expect(result.current.error).toBe('Push could not access its local history. Please try again.');
   });
 });
 

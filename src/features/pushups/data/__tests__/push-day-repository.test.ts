@@ -3,7 +3,28 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import type { DayKey } from '../../domain/types';
 import { SQLitePushDayRepository } from '../push-day-repository';
 
-describe('SQLitePushDayRepository.adjustReps', () => {
+describe('SQLitePushDayRepository', () => {
+  it('derives gap days without starting a write transaction during a history refresh', async () => {
+    const transaction = {
+      getFirstAsync: jest.fn(),
+      runAsync: jest.fn(),
+    };
+    const db = databaseMock(transaction, [{
+      day_key: '2026-08-20',
+      reps: 4,
+      color_index: 2,
+    }]);
+    const repository = new SQLitePushDayRepository(db);
+
+    const history = await repository.getHistoryThrough('2026-08-21' as DayKey);
+
+    expect(history).toEqual([
+      { dayKey: '2026-08-20', reps: 4, colorIndex: 2 },
+      { dayKey: '2026-08-21', reps: 0, colorIndex: 3 },
+    ]);
+    expect(db.withExclusiveTransactionAsync).not.toHaveBeenCalled();
+  });
+
   it('updates an existing day and refreshes history through today', async () => {
     const transaction = {
       getFirstAsync: jest.fn().mockResolvedValue({

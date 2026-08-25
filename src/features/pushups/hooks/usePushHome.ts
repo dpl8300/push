@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useIsFocused } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -18,10 +18,12 @@ import {
 
 export function usePushHome() {
   const db = useSQLiteContext();
+  const isFocused = useIsFocused();
   const repository = useMemo(() => new SQLitePushDayRepository(db), [db]);
   const [todayKey, setTodayKey] = useState<DayKey>(() => toDayKey(new Date()));
   const [records, setRecords] = useState<PushDayRecord[]>([]);
   const recordsRef = useRef<PushDayRecord[]>([]);
+  const refreshInFlightRef = useRef<Promise<void> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,10 +48,22 @@ export function usePushHome() {
     }
   }, [repository]);
 
-  const refresh = useCallback(async () => {
-    const nextTodayKey = toDayKey(new Date());
-    setTodayKey(nextTodayKey);
-    await loadHistory(nextTodayKey);
+  const refresh = useCallback(() => {
+    if (refreshInFlightRef.current) return refreshInFlightRef.current;
+
+    const operation = (async () => {
+      const nextTodayKey = toDayKey(new Date());
+      setTodayKey(nextTodayKey);
+      await loadHistory(nextTodayKey);
+    })();
+
+    refreshInFlightRef.current = operation;
+    void operation.then(() => {
+      if (refreshInFlightRef.current === operation) refreshInFlightRef.current = null;
+    }, () => {
+      if (refreshInFlightRef.current === operation) refreshInFlightRef.current = null;
+    });
+    return operation;
   }, [loadHistory]);
 
   useFocusEffect(useCallback(() => {
@@ -62,13 +76,13 @@ export function usePushHome() {
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState !== 'active' || isAdding) return;
+      if (nextState !== 'active' || !isFocused || isAdding) return;
 
       void refresh();
     });
 
     return () => subscription.remove();
-  }, [isAdding, refresh]);
+  }, [isAdding, isFocused, refresh]);
 
   const addPushUps = useCallback(async (amount: number) => {
     if (isAdding) return;
@@ -189,7 +203,6 @@ async function safelyPlay(action: () => Promise<void>): Promise<void> {
   }
 }
 
-function messageForError(error: unknown): string {
-  if (error instanceof Error && error.message) return error.message;
+function messageForError(_error: unknown): string {
   return 'Push could not access its local history. Please try again.';
 }

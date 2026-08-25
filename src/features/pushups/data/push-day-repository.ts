@@ -22,23 +22,7 @@ export class SQLitePushDayRepository implements PushDayRepository {
 
   async getHistoryThrough(todayKey: DayKey): Promise<PushDayRecord[]> {
     const rawRecords = await this.readRecordsThrough(todayKey);
-    const normalized = fillRecordGaps(rawRecords, todayKey);
-
-    if (normalized.length === 0) return [];
-
-    await this.db.withExclusiveTransactionAsync(async (transaction) => {
-      for (const record of normalized) {
-        await transaction.runAsync(
-          `INSERT OR IGNORE INTO push_day_records (day_key, reps, color_index)
-           VALUES (?, ?, ?)`,
-          record.dayKey,
-          record.reps,
-          record.colorIndex,
-        );
-      }
-    });
-
-    return normalized;
+    return fillRecordGaps(rawRecords, todayKey);
   }
 
   async addReps(dayKey: DayKey, amount: number): Promise<PushDayRecord[]> {

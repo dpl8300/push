@@ -1,4 +1,4 @@
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useIsFocused } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -17,6 +17,7 @@ import type { DayKey, PushDayRecord } from '@/features/pushups/domain/types';
 
 export function usePushProgress() {
   const db = useSQLiteContext();
+  const isFocused = useIsFocused();
   const repository = useMemo(() => new SQLitePushDayRepository(db), [db]);
   const initialTodayKey = useMemo(() => toDayKey(new Date()), []);
   const [todayKey, setTodayKey] = useState<DayKey>(initialTodayKey);
@@ -27,6 +28,7 @@ export function usePushProgress() {
   const [selectedDayKey, setSelectedDayKey] = useState<DayKey>(initialTodayKey);
   const [records, setRecords] = useState<PushDayRecord[]>([]);
   const recordsRef = useRef<PushDayRecord[]>([]);
+  const refreshInFlightRef = useRef<Promise<void> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdjusting, setIsAdjusting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,24 +50,36 @@ export function usePushProgress() {
     }
   }, [repository]);
 
-  const refresh = useCallback(async () => {
-    const nextTodayKey = toDayKey(new Date());
-    const previousTodayKey = todayKeyRef.current;
+  const refresh = useCallback(() => {
+    if (refreshInFlightRef.current) return refreshInFlightRef.current;
 
-    if (nextTodayKey !== previousTodayKey) {
-      todayKeyRef.current = nextTodayKey;
-      setTodayKey(nextTodayKey);
-      setDisplayedMonthKey((currentMonth) => (
-        isSameMonth(currentMonth, previousTodayKey)
-          ? startOfMonth(nextTodayKey)
-          : currentMonth
-      ));
-      setSelectedDayKey((currentSelection) => (
-        currentSelection === previousTodayKey ? nextTodayKey : currentSelection
-      ));
-    }
+    const operation = (async () => {
+      const nextTodayKey = toDayKey(new Date());
+      const previousTodayKey = todayKeyRef.current;
 
-    await loadHistory(nextTodayKey);
+      if (nextTodayKey !== previousTodayKey) {
+        todayKeyRef.current = nextTodayKey;
+        setTodayKey(nextTodayKey);
+        setDisplayedMonthKey((currentMonth) => (
+          isSameMonth(currentMonth, previousTodayKey)
+            ? startOfMonth(nextTodayKey)
+            : currentMonth
+        ));
+        setSelectedDayKey((currentSelection) => (
+          currentSelection === previousTodayKey ? nextTodayKey : currentSelection
+        ));
+      }
+
+      await loadHistory(nextTodayKey);
+    })();
+
+    refreshInFlightRef.current = operation;
+    void operation.then(() => {
+      if (refreshInFlightRef.current === operation) refreshInFlightRef.current = null;
+    }, () => {
+      if (refreshInFlightRef.current === operation) refreshInFlightRef.current = null;
+    });
+    return operation;
   }, [loadHistory]);
 
   useFocusEffect(useCallback(() => {
@@ -78,13 +92,13 @@ export function usePushProgress() {
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active' && !isAdjusting) {
+      if (nextState === 'active' && isFocused && !isAdjusting) {
         void refresh();
       }
     });
 
     return () => subscription.remove();
-  }, [isAdjusting, refresh]);
+  }, [isAdjusting, isFocused, refresh]);
 
   const calendarDays = useMemo(() => buildProgressCalendar(
     displayedMonthKey,
@@ -199,7 +213,6 @@ function replaceDay(
   return next;
 }
 
-function messageForError(error: unknown): string {
-  if (error instanceof Error && error.message) return error.message;
+function messageForError(_error: unknown): string {
   return 'Push could not access its local history. Please try again.';
 }
