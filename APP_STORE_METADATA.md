@@ -101,8 +101,8 @@ Each set is within Apple's 100-character limit. Use one set, not all three.
 1. `store-assets/screenshots/01-home.jpg` — Home dashboard with an active daily total
 2. `store-assets/screenshots/02-progress.jpg` — Progress calendar and selected-day controls
 
-Both files are 1206 × 2622 portrait screenshots for the iPhone 17 Pro display class. JPEG copies are
-used because App Store screenshots cannot contain alpha channels.
+Both files are 1242 × 2688 portrait screenshots for the App Store's accepted iPhone display class.
+JPEG copies are used because App Store screenshots cannot contain alpha channels.
 
 ## Release build and submission
 
