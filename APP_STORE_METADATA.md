@@ -84,7 +84,9 @@ Each set is within Apple's 100-character limit. Use one set, not all three.
 - Advertising: None.
 - Accounts: None.
 - Export compliance: the app does not use non-exempt encryption; this is declared in the binary.
-- Content rights: the app does not contain or access third-party content.
+- Content rights: the app does not contain or access protected third-party content requiring
+  separate authorization. The bundled Orbitron Black typeface is used under the SIL Open Font
+  License 1.1; the license is stored at `assets/fonts/Orbitron-OFL.txt`.
 - Age rating: answer `None` for objectionable-content and capability questions that do not apply; use the lowest rating App Store Connect calculates.
 - Regulated medical-device declaration: this is a general fitness tracker, not a medical device and it makes no diagnosis or treatment claims.
 
@@ -94,15 +96,17 @@ Each set is within Apple's 100-character limit. Use one set, not all three.
 - Contact: use the private email address and phone number associated with the developer account.
 - Review notes:
 
-  `Push Daily is a local-first push-up tracker. No sign-in is required. Push-up counts and history are stored only in the app's local database; the app does not collect user data or include analytics or advertising. From Home, tap “See more progress.” The bottom of the Progress page contains the in-app Privacy Policy and Support links.`
+  `Push Daily is a local-first push-up tracker. No sign-in is required. Push-up counts and history are stored only in the app's local database; the app does not collect user data or include analytics or advertising. From Home, tap “See more progress.” The bottom of the Progress page contains the in-app Privacy Policy and Support links. The bundled Orbitron Black typeface is distributed under the SIL Open Font License 1.1.`
 
 ## Screenshot order
 
 1. `store-assets/screenshots/01-home.jpg` — Home dashboard with an active daily total
 2. `store-assets/screenshots/02-progress.jpg` — Progress calendar and selected-day controls
+3. `store-assets/screenshots/03-home-logging.jpg` — Home dashboard while logging today's activity
+4. `store-assets/screenshots/04-home-empty.jpg` — Home dashboard before today's first push-up
 
-Both files are 1242 × 2688 portrait screenshots for the App Store's accepted iPhone display class.
-JPEG copies are used because App Store screenshots cannot contain alpha channels.
+All files are 1242 × 2688 portrait screenshots for the App Store's accepted 6.5-inch iPhone
+display class. JPEG copies are used because App Store screenshots cannot contain alpha channels.
 
 ## Release build and submission
 

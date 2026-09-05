@@ -3,9 +3,9 @@ import { Platform, type TextStyle } from 'react-native';
 export const Typography = {
   brand: {
     fontFamily: Platform.select({
-      ios: 'EurostileExtended-Black',
-      android: 'EurostileExtended',
-      default: 'EurostileExtended-Black',
+      ios: 'Orbitron-Black',
+      android: 'Orbitron',
+      default: 'Orbitron-Black',
     }),
     fontWeight: '900',
   } satisfies TextStyle,
@@ -13,4 +13,3 @@ export const Typography = {
     fontVariant: ['tabular-nums'],
   } satisfies TextStyle,
 } as const;
-

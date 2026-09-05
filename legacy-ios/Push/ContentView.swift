@@ -437,7 +437,7 @@ struct PushHomeView: View {
     private var header: some View {
         HStack(alignment: .center) {
             Text("PUSH")
-                .font(.custom("EurostileExtended-Black", size: 39))
+                .font(.custom("Orbitron-Black", size: 39))
                 .tracking(1)
                 .foregroundStyle(.white)
                 .shadow(color: .white.opacity(0.18), radius: 12)
@@ -1076,7 +1076,7 @@ struct CustomAmountSheet: View {
 
 enum AppFontRegistrar {
     static func registerFonts() {
-        guard let fontURL = Bundle.main.url(forResource: "EurostileExtendedBlack", withExtension: "ttf") else {
+        guard let fontURL = Bundle.main.url(forResource: "Orbitron-Black", withExtension: "ttf") else {
             return
         }
 

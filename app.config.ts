@@ -37,10 +37,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         android: {
           fonts: [
             {
-              fontFamily: 'EurostileExtended',
+              fontFamily: 'Orbitron',
               fontDefinitions: [
                 {
-                  path: './assets/fonts/EurostileExtendedBlack.ttf',
+                  path: './assets/fonts/Orbitron-Black.ttf',
                   weight: 900,
                 },
               ],
@@ -48,7 +48,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           ],
         },
         ios: {
-          fonts: ['./assets/fonts/EurostileExtendedBlack.ttf'],
+          fonts: ['./assets/fonts/Orbitron-Black.ttf'],
         },
       },
     ],

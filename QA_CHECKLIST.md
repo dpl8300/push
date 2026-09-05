@@ -4,7 +4,7 @@ Run this checklist on at least one current iPhone and one current Android phone.
 
 ## Visual
 
-- PUSH renders in the bundled Eurostile Extended Black font.
+- PUSH renders in the bundled Orbitron Black font.
 - App icon and splash artwork retain their original proportions and colors.
 - Background is near-black with pink top-right and orange bottom-left glows.
 - Header, total, motivation, chart, stats, quick-add buttons, and tab bar fit

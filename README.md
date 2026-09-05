@@ -4,6 +4,9 @@ Push is a local-first push-up tracker built with Expo SDK 57, React Native, and
 strict TypeScript. The original SwiftUI prototype is preserved in
 [`legacy-ios`](./legacy-ios).
 
+The bundled Orbitron Black display font is distributed under the SIL Open Font
+License 1.1. See [`assets/fonts/Orbitron-OFL.txt`](./assets/fonts/Orbitron-OFL.txt).
+
 ## Local prerequisites
 
 The repository is ready, but native compilation requires local platform tools:
